@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JWT Auth & Neon PostgreSQL — Live Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --bg-card-hover: rgba(24, 34, 53, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.6);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #030712;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 60%);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .brand-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .badge-neon {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--accent);
+      border-color: rgba(6, 182, 212, 0.25);
+    }
+
+    /* Main Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 980px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 10px;
+      gap: 4px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-color);
+      border-radius: 9px;
+      color: #fff;
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 9px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Token Card */
+    .token-display {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 9px;
+      padding: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #a5b4fc;
+      word-break: break-all;
+      max-height: 85px;
+      overflow-y: auto;
+      margin-top: 6px;
+    }
+
+    .token-info-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 9px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    /* Response Console */
+    .console-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .status-badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .status-200, .status-201 {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-400, .status-401, .status-409, .status-500 {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    pre.code-body {
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 14px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .quick-fill {
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-decoration: underline;
+      float: right;
+    }
+
+    .pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🔐</div>
+        <div class="brand-title">
+          <h1>JWT Authentication Console</h1>
+          <p>Express 4.18 + Neon Serverless PostgreSQL</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <div class="badge badge-neon">
+          <span>⚡ Neon PostgreSQL</span>
+        </div>
+        <div class="badge">
+          <div class="badge-dot" id="serverDot"></div>
+          <span id="serverStatusText">API Online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="dashboard-grid">
+      <!-- Left Column: Auth Actions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🚀</span> Authentication Actions
+          </div>
+          <span id="authStatusBadge" class="badge">Guest</span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('registerTab', this)">Register</button>
+          <button class="tab-btn" onclick="switchTab('loginTab', this)">Log In</button>
+          <button class="tab-btn" onclick="switchTab('protectedTab', this)">Protected API</button>
+        </div>
+
+        <!-- Register Tab -->
+        <div id="registerTab" class="tab-content active">
+          <div class="form-group">
+            <label>
+              Username
+              <span class="quick-fill" onclick="fillRegisterDemo()">⚡ Fill Demo User</span>
+            </label>
+            <input type="text" id="regUsername" placeholder="e.g. dev_alex" />
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="regEmail" placeholder="e.g. alex@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="regPassword" placeholder="min 6 characters" />
+          </div>
+          <button class="btn btn-primary btn-block" onclick="handleRegister()">
+            <span>✨</span> Create Account (/auth/register)
+          </button>
+        </div>
+
+        <!-- Login Tab -->
+        <div id="loginTab" class="tab-content">
+          <div class="form-group">
+            <label>
+              Username
+              <span class="quick-fill" onclick="fillLoginDemo()">⚡ Use Registered User</span>
+            </label>
+            <input type="text" id="loginUsername" placeholder="e.g. dev_alex" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter password" />
+          </div>
+          <button class="btn btn-primary btn-block" onclick="handleLogin()">
+            <span>🔑</span> Log In & Generate JWTs (/auth/login)
+          </button>
+        </div>
+
+        <!-- Protected API Tab -->
+        <div id="protectedTab" class="tab-content">
+          <div id="userInfoSection" style="display: none;">
+            <div class="user-card">
+              <div class="avatar" id="userAvatar">U</div>
+              <div>
+                <div style="font-weight: 700;" id="userDisplayName">User</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);" id="userEmail">user@example.com</div>
+              </div>
+            </div>
+          </div>
+
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            These endpoints require a valid <code style="color: var(--accent);">Bearer &lt;token&gt;</code> in the <code style="color: var(--accent);">Authorization</code> header:
+          </p>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="fetchProfile()">
+              <span>👤</span> GET /api/profile
+            </button>
+            <button class="btn btn-secondary" onclick="fetchDashboard()">
+              <span>📊</span> GET /api/dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Tokens & Live Activity -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🎫</span> JWT Tokens & Session
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handleRefresh()">
+              🔄 Refresh Token
+            </button>
+            <button class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handleLogout()">
+              🚪 Logout
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label>Access Token (Expires in 15m)</label>
+          <div id="accessTokenBox" class="token-display">None active (Please login)</div>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <label>Refresh Token (Persisted in Neon Postgres when revoked)</label>
+          <div id="refreshTokenBox" class="token-display">None active</div>
+        </div>
+
+        <!-- Live Response Inspector -->
+        <div class="console-box">
+          <div class="console-header">
+            <span id="responseStatusBadge" class="status-badge status-200">200 OK</span>
+            <span id="responseEndpoint" style="color: var(--text-muted);">GET /</span>
+          </div>
+          <pre id="responseJson" class="code-body">{ "message": "System ready. Click any action above to test." }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTokens = {
+      accessToken: localStorage.getItem("access_token") || "",
+      refreshToken: localStorage.getItem("refresh_token") || "",
+      user: null
+    };
+
+    function updateTokenUI() {
+      const accessEl = document.getElementById("accessTokenBox");
+      const refreshEl = document.getElementById("refreshTokenBox");
+      const authBadge = document.getElementById("authStatusBadge");
+
+      if (currentTokens.accessToken) {
+        accessEl.textContent = currentTokens.accessToken;
+        authBadge.textContent = "Authenticated 🔒";
+        authBadge.style.color = "var(--success)";
+      } else {
+        accessEl.textContent = "None active (Please login)";
+        authBadge.textContent = "Guest";
+        authBadge.style.color = "var(--text-muted)";
+      }
+
+      if (currentTokens.refreshToken) {
+        refreshEl.textContent = currentTokens.refreshToken;
+      } else {
+        refreshEl.textContent = "None active";
+      }
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+      btn.classList.add("active");
+    }
+
+    function displayResult(status, method, url, data) {
+      const statusBadge = document.getElementById("responseStatusBadge");
+      const endpoint = document.getElementById("responseEndpoint");
+      const jsonPre = document.getElementById("responseJson");
+
+      statusBadge.textContent = `${status}`;
+      statusBadge.className = `status-badge ${status >= 200 && status < 300 ? 'status-200' : 'status-400'}`;
+      endpoint.textContent = `${method} ${url}`;
+      jsonPre.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function fillRegisterDemo() {
+      const rand = Math.floor(Math.random() * 8999 + 1000);
+      document.getElementById("regUsername").value = `user_${rand}`;
+      document.getElementById("regEmail").value = `user_${rand}@neon.test`;
+      document.getElementById("regPassword").value = "neonPassword123";
+    }
+
+    function fillLoginDemo() {
+      const regUser = document.getElementById("regUsername").value;
+      const regPass = document.getElementById("regPassword").value;
+      if (regUser) document.getElementById("loginUsername").value = regUser;
+      if (regPass) document.getElementById("loginPassword").value = regPass;
+    }
+
+    async function handleRegister() {
+      const username = document.getElementById("regUsername").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const password = document.getElementById("regPassword").value;
+
+      try {
+        const res = await fetch("/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password })
+        });
+        const data = await res.json();
+        displayResult(res.status, "POST", "/auth/register", data);
+
+        if (res.ok) {
+          document.getElementById("loginUsername").value = username;
+          document.getElementById("loginPassword").value = password;
+          // Switch to login tab
+          const loginTabBtn = document.querySelectorAll(".tab-btn")[1];
+          switchTab("loginTab", loginTabBtn);
+        }
+      } catch (err) {
+        displayResult(500, "POST", "/auth/register", { error: err.message });
+      }
+    }
+
+    async function handleLogin() {
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      try {
+        const res = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        displayResult(res.status, "POST", "/auth/login", data);
+
+        if (res.ok && data.accessToken) {
+          currentTokens.accessToken = data.accessToken;
+          currentTokens.refreshToken = data.refreshToken;
+          localStorage.setItem("access_token", data.accessToken);
+          localStorage.setItem("refresh_token", data.refreshToken);
+          updateTokenUI();
+
+          // Auto-fetch profile
+          fetchProfile();
+          const protectedTabBtn = document.querySelectorAll(".tab-btn")[2];
+          switchTab("protectedTab", protectedTabBtn);
+        }
+      } catch (err) {
+        displayResult(500, "POST", "/auth/login", { error: err.message });
+      }
+    }
+
+    async function fetchProfile() {
+      if (!currentTokens.accessToken) {
+        displayResult(401, "GET", "/api/profile", {
+          error: "No access token in session. Please log in first."
+        });
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/profile", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${currentTokens.accessToken}`
+          }
+        });
+        const data = await res.json();
+        displayResult(res.status, "GET", "/api/profile", data);
+
+        if (res.ok && data.profile) {
+          document.getElementById("userInfoSection").style.display = "block";
+          document.getElementById("userDisplayName").textContent = data.profile.username;
+          document.getElementById("userEmail").textContent = data.profile.email;
+          document.getElementById("userAvatar").textContent = data.profile.username.substring(0, 2).toUpperCase();
+        }
+      } catch (err) {
+        displayResult(500, "GET", "/api/profile", { error: err.message });
+      }
+    }
+
+    async function fetchDashboard() {
+      if (!currentTokens.accessToken) {
+        displayResult(401, "GET", "/api/dashboard", {
+          error: "No access token in session. Please log in first."
+        });
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/dashboard", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${currentTokens.accessToken}`
+          }
+        });
+        const data = await res.json();
+        displayResult(res.status, "GET", "/api/dashboard", data);
+      } catch (err) {
+        displayResult(500, "GET", "/api/dashboard", { error: err.message });
+      }
+    }
+
+    async function handleRefresh() {
+      if (!currentTokens.refreshToken) {
+        displayResult(400, "POST", "/auth/refresh", {
+          error: "No refresh token available to exchange."
+        });
+        return;
+      }
+
+      try {
+        const res = await fetch("/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: currentTokens.refreshToken })
+        });
+        const data = await res.json();
+        displayResult(res.status, "POST", "/auth/refresh", data);
+
+        if (res.ok && data.accessToken) {
+          currentTokens.accessToken = data.accessToken;
+          localStorage.setItem("access_token", data.accessToken);
+          updateTokenUI();
+        }
+      } catch (err) {
+        displayResult(500, "POST", "/auth/refresh", { error: err.message });
+      }
+    }
+
+    async function handleLogout() {
+      if (!currentTokens.refreshToken) {
+        currentTokens.accessToken = "";
+        localStorage.clear();
+        updateTokenUI();
+        document.getElementById("userInfoSection").style.display = "none";
+        displayResult(200, "LOGOUT", "Local", { message: "Local session cleared." });
+        return;
+      }
+
+      try {
+        const res = await fetch("/auth/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: currentTokens.refreshToken })
+        });
+        const data = await res.json();
+        displayResult(res.status, "POST", "/auth/logout", data);
+
+        currentTokens.accessToken = "";
+        currentTokens.refreshToken = "";
+        localStorage.clear();
+        updateTokenUI();
+        document.getElementById("userInfoSection").style.display = "none";
+      } catch (err) {
+        displayResult(500, "POST", "/auth/logout", { error: err.message });
+      }
+    }
+
+    // Init
+    updateTokenUI();
+  </script>
+</body>
+</html>
